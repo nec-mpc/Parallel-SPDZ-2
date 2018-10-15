@@ -130,7 +130,7 @@ See https://github.com/nec-mpc/Parallel-SPDZ-2-Extension-Ring for our implemente
 4) Run `make clean all`
 
 ### To generate the bytecode:
-1) Set the program source file of MPC on [Programs/Source](https://github.com/cryptobiu/SPDZ-2/tree/master/Programs/Source). 
+1) Set the program source file of MPC on [Programs/Source](https://github.com/nec-mpc/SPDZ-2/tree/master/Programs/Source). 
  - File extension is ".mpc"
  
 2) Change directories to download one.
