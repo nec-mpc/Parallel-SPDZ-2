@@ -14,6 +14,7 @@ using namespace std;
 #include "Math/gf2nlong.h"
 #include "Math/field_types.h"
 
+
 /* This interface compatible with the gfp interface
  * which then allows us to template the Share
  * data type.
@@ -26,7 +27,26 @@ using namespace std;
 
 class gf2n_short
 {
-  word a;
+//#if defined(EXT_NEC_RING)
+//	SPDZEXT_VALTYPE a;
+//#else
+
+  // original (start)
+  //  word a;
+  // original (end)
+
+  // added (start)
+	word a;
+#if defined(EXT_NEC_RING)
+//	int sz = static_cast<int>(ceil(BATCH_SIZE / sizeof(SPDZEXT_VALTYPE)));
+//	SPDZEXT_VALTYPE a_bit[static_cast<int>(ceil(BATCH_SIZE / sizeof(SPDZEXT_VALTYPE)))];
+	int sz = static_cast<int>(ceil((float)BATCH_SIZE/(8*sizeof(SPDZEXT_VALTYPE))));
+	SPDZEXT_VALTYPE a_bit[static_cast<int>(ceil((float)BATCH_SIZE/(8*sizeof(SPDZEXT_VALTYPE))))];
+#endif
+  // added (end)
+//#endif
+
+//	uint8_t a;
 
   static int n,t1,t2,t3,nterms;
   static int l0,l1,l2,l3;
@@ -72,17 +92,117 @@ class gf2n_short
 
   static int default_length() { return 40; }
 
-  word get() const { return a; }
+  word get() const {
+#if defined(EXT_NEC_RING)
+	  return a_bit[0];
+#else
+	  return a;
+#endif
+  }
+
+#if defined(EXT_NEC_RING)
+  SPDZEXT_VALTYPE get(int i) const { return a_bit[i]; }
+#endif
   word get_word() const { return a; }
 
   void assign(const gf2n_short& g)     { a=g.a; }
 
-  void assign_zero()             { a=0; }
-  void assign_one()              { a=1; } 
+  void assign_zero()             {
+#if defined(EXT_NEC_RING)
+//    for (int i=0; i<sz; i++) a_bit[i] = 0;
+    memset(a_bit, 0, sizeof(SPDZEXT_VALTYPE)*sz);
+#endif
+      // original (start)
+	  // a=0;
+	  // original (end)
+  }
+#if defined(EXT_NEC_RING)
+  void assign_zero(int i)            {
+	  a_bit[i] = 0;
+  }
+#endif
+
+  void assign_one()              {
+#if defined(EXT_NEC_RING)
+	 int modulus = 8*sizeof(SPDZEXT_VALTYPE);
+    for (int i=0; i<BATCH_SIZE; i++) {
+    	a_bit[i/modulus] ^= (1 << i%modulus); // little endian
+    }
+#endif
+      // original (start)
+	  // a=1;
+	  // original (end)
+  }
   void assign_x()                { a=2; }
-  void assign(word aa)           { a=aa&mask; }
-  void assign(long aa)           { assign(word(aa)); }
-  void assign(int aa)            { a=static_cast<unsigned int>(aa)&mask; }
+  void assign(word aa)           {
+#if defined(EXT_NEC_RING)
+	  assign_zero();
+	  int modulus = 8*sizeof(SPDZEXT_VALTYPE);
+	  for (int i=0; i<BATCH_SIZE; i++) {
+		  a_bit[i/modulus] ^= (static_cast<SPDZEXT_VALTYPE>(aa) << (i%modulus)); // little endian
+	  }
+	  // original (start)
+      // a=aa;
+	  // original (end)
+#else
+	  a=aa&mask;
+#endif
+  }
+
+  void assign(long aa)           {
+#if defined(EXT_NEC_RING)
+	  assign_zero();
+	  int modulus = 8*sizeof(SPDZEXT_VALTYPE);
+	  for (int i=0; i<BATCH_SIZE; i++) {
+		  a_bit[i/modulus] ^= (static_cast<SPDZEXT_VALTYPE>(aa) << (i%modulus)); // little endian
+	  }
+	  // original (start)
+      // a=aa;
+	  // original (end)
+#else
+	  assign(word(aa));
+#endif
+  }
+  void assign(int aa)            {
+#if defined(EXT_NEC_RING)
+	  assign_zero();
+	  int modulus = 8*sizeof(SPDZEXT_VALTYPE);
+	  for (int i=0; i<BATCH_SIZE; i++) {
+		  a_bit[i/modulus] ^= (static_cast<SPDZEXT_VALTYPE>(aa) << (i%modulus)); // little endian
+	  } // original (start)
+//	  a=static_cast<unsigned int>(aa);
+	  // original (end)
+#else
+	  a=static_cast<unsigned int>(aa)&mask;
+#endif
+  }
+
+#if defined(EXT_NEC_RING)
+  void assign_one_elem(SPDZEXT_VALTYPE aa, int i) {
+	  a_bit[i] = aa;
+  }
+  void assign(word aa, int i)	{
+	  assign_zero(i);
+//	  cout << "[gf2n.h] assign (word)" << endl;
+	  int modulus = 8*sizeof(SPDZEXT_VALTYPE);
+	  a_bit[i/modulus] ^= (static_cast<SPDZEXT_VALTYPE>(aa) << (i%modulus));
+  }
+  void assign(long aa, int i)	{
+	  assign_zero(i);
+//	  cout << "[gf2n.h] assign (long)" << endl;
+	  int modulus = 8*sizeof(SPDZEXT_VALTYPE);
+	  a_bit[i/modulus] ^= (static_cast<SPDZEXT_VALTYPE>(aa) << (i%modulus));
+  }
+  void assign(int aa, int i)	{
+	  assign_zero(i);
+//	  cout << "[gf2n.h] assign (int)" << endl;
+	  int modulus = 8*sizeof(SPDZEXT_VALTYPE);
+	  a_bit[i/modulus] ^= (static_cast<SPDZEXT_VALTYPE>(aa) << (i%modulus));
+  }
+  int get_bit(int i, int j) const
+      { return (a_bit[i]>>j)&1; }
+#endif
+
   void assign(const char* buffer) { a = *(word*)buffer; }
 
   int get_bit(int i) const
@@ -102,8 +222,14 @@ class gf2n_short
   ~gf2n_short()             { ; }
 
   gf2n_short& operator=(const gf2n_short& g)
-    { assign(g);
-      return *this;
+    {
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_bit[i] = g.a_bit[i];
+#endif
+	  // original (start)
+     // assign(g);
+      // original (end)
+	  return *this;
     }
 
   int is_zero() const            { return (a==0); }
@@ -114,9 +240,19 @@ class gf2n_short
 
   // x+y
   void add(const gf2n_short& x,const gf2n_short& y)
-    { a=x.a^y.a; }  
+    {
+	  a=x.a^y.a;
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_bit[i] = x.a_bit[i] ^ y.a_bit[i];
+#endif
+    }
   void add(const gf2n_short& x)
-    { a^=x.a; }
+    {
+	  a^=x.a;
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_bit[i] ^= x.a_bit[i];
+#endif
+    }
   template<int T>
   void add(octet* x)
     { a^=*(word*)(x); }
@@ -126,14 +262,30 @@ class gf2n_short
   void add(octet* x)
     { add<0>(x); }
   void sub(const gf2n_short& x,const gf2n_short& y)
-    { a=x.a^y.a; }
+    {
+	  a=x.a^y.a;
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_bit[i] = x.a_bit[i] ^ y.a_bit[i];
+#endif
+    }
   void sub(const gf2n_short& x)
-    { a^=x.a; }
+    {
+	  a^=x.a;
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_bit[i] ^= x.a_bit[i];
+#endif
+    }
   // = x * y
   void mul(const gf2n_short& x,const gf2n_short& y);
   void mul(const gf2n_short& x) { mul(*this,x); }
   // x * y when one of x,y is a bit
-  void mul_by_bit(const gf2n_short& x, const gf2n_short& y)   { a = x.a * y.a; }
+  void mul_by_bit(const gf2n_short& x, const gf2n_short& y)   {
+	  a = x.a * y.a;
+#if defined(EXT_NEC_RING)
+//	  for (int i=0; i<sz; i++) a_bit[i] = x.a_bit[i] * y.a_bit[i];
+	  for (int i=0; i<sz; i++) a_bit[i] = x.a_bit[i] & y.a_bit[i]; // for batched computation
+#endif
+  }
 
   gf2n_short operator+(const gf2n_short& x) { gf2n_short res; res.add(*this, x); return res; }
   gf2n_short operator*(const gf2n_short& x) { gf2n_short res; res.mul(*this, x); return res; }
@@ -173,10 +325,18 @@ class gf2n_short
   void output(ostream& s,bool human) const;
   void input(istream& s,bool human);
 
-  friend ostream& operator<<(ostream& s,const gf2n_short& x)
-    { s << hex << showbase << x.a << dec;
-      return s;
-    }
+  friend ostream& operator<<(ostream& s,const gf2n_short& x) {
+//	  s << hex << showbase << x.a << dec;
+
+	  int modulus = 8*sizeof(SPDZEXT_VALTYPE);
+	  for (int i=0; i<BATCH_SIZE; i++) {
+		  int obit = (x.a_bit[i/modulus] >> (i%modulus)) & 0x1;
+		  s << hex << showbase << obit << dec << " ";
+	  }
+	  s << "\n";
+	  return s;
+  }
+
   friend istream& operator>>(istream& s,gf2n_short& x)
     { s >> hex >> x.a >> dec;
       return s;

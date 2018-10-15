@@ -22,11 +22,16 @@ using namespace std;
  * for the FHE scheme
  */
 
-
 class gfp
 {
   modp a;
   static Zp_Data ZpD;
+
+#if defined(EXT_NEC_RING)
+  SPDZEXT_VALTYPE a_ring[BATCH_SIZE];
+  int sz=BATCH_SIZE;
+  uint32_t precision;
+#endif
 
   public:
 
@@ -47,15 +52,50 @@ class gfp
 
   static int size() { return t() * sizeof(mp_limb_t); }
 
-  void assign(const gfp& g) { a=g.a; } 
-  void assign_zero()        { assignZero(a,ZpD); }
+  void assign(const gfp& g) {
+	  a=g.a;
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] = g.a_ring[i];
+#endif
+  }
+  void assign_zero()        {
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] = 0;
+#else
+	  assignZero(a,ZpD);
+#endif
+  }
   void assign_one()         { assignOne(a,ZpD); } 
-  void assign(word aa)      { bigint b=aa; to_gfp(*this,b); }
-  void assign(long aa)      { bigint b=aa; to_gfp(*this,b); }
-  void assign(int aa)       { bigint b=aa; to_gfp(*this,b); }
+  void assign(word aa)      {
+	  bigint b=aa; to_gfp(*this,b);
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] = (SPDZEXT_VALTYPE)aa;
+#endif
+  }
+  void assign(long aa)      {
+	  bigint b=aa; to_gfp(*this,b);
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] = (SPDZEXT_VALTYPE)aa;
+#endif
+  }
+  void assign(int aa)       {
+	  bigint b=aa; to_gfp(*this,b);
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] = (SPDZEXT_VALTYPE)aa;
+#endif
+  }
   void assign(const char* buffer) { a.assign(buffer, ZpD.get_t()); }
 
   modp get() const          { return a; }
+#if defined(EXT_NEC_RING)
+  SPDZEXT_VALTYPE get(int i) const {return a_ring[i]; }
+
+  void assign_ring(SPDZEXT_VALTYPE aa) { for (int i=0; i<sz; i++) a_ring[i] = aa; }
+  void assign_ring(SPDZEXT_VALTYPE aa, int i) { a_ring[i] = aa; }
+
+  SPDZEXT_VALTYPE get_ring() const { return a_ring[0]; }
+  SPDZEXT_VALTYPE get_ring(int i) const { return a_ring[i]; }
+#endif
 
   // Assumes prD behind x is equal to ZpD
   void assign(modp& x) { a=x; }
@@ -70,7 +110,12 @@ class gfp
   ~gfp()             { ; }
 
   gfp& operator=(const gfp& g)
-    { if (&g!=this) { a=g.a; }
+    { if (&g!=this) {
+    	a=g.a;
+#if defined(EXT_NEC_RING)
+    	for (int i=0; i<sz; i++) a_ring[i] = g.a_ring[i];
+#endif
+    }
       return *this;
     }
 
@@ -101,33 +146,85 @@ class gfp
   // x+y
   template <int T>
   void add(const gfp& x,const gfp& y)
-    { Add<T>(a,x.a,y.a,ZpD); }  
+    {
+	  Add<T>(a,x.a,y.a,ZpD);
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] = x.a_ring[i] + y.a_ring[i];
+#endif
+    }
   template <int T>
   void add(const gfp& x)
-    { Add<T>(a,a,x.a,ZpD); }
+    {
+	  Add<T>(a,a,x.a,ZpD);
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] += x.a_ring[i];
+#endif
+    }
   template <int T>
   void add(void* x)
-    { ZpD.Add<T>(a.x,a.x,(mp_limb_t*)x); }
+    {
+	  ZpD.Add<T>(a.x,a.x,(mp_limb_t*)x);
+#if defined(EXT_NEC_RING)
+#endif
+    }
   template <int T>
   void add(octetStream& os)
     { add<T>(os.consume(size())); }
   void add(const gfp& x,const gfp& y)
-    { Add(a,x.a,y.a,ZpD); }  
+    {
+	  Add(a,x.a,y.a,ZpD);
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] = x.a_ring[i] + y.a_ring[i];
+#endif
+    }
   void add(const gfp& x)
-    { Add(a,a,x.a,ZpD); }
+    {
+	  Add(a,a,x.a,ZpD);
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] += x.a_ring[i];
+#endif
+    }
   void add(void* x)
-    { ZpD.Add(a.x,a.x,(mp_limb_t*)x); }
+    {
+	  ZpD.Add(a.x,a.x,(mp_limb_t*)x);
+#if defined(EXT_NEC_RING)
+#endif
+    }
   void sub(const gfp& x,const gfp& y)
-    { Sub(a,x.a,y.a,ZpD); }
+    {
+	  Sub(a,x.a,y.a,ZpD);
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] = x.a_ring[i] - y.a_ring[i];
+#endif
+    }
   void sub(const gfp& x)
-    { Sub(a,a,x.a,ZpD); }
+    {
+	  Sub(a,a,x.a,ZpD);
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] -= x.a_ring[i];
+#endif
+	  }
   // = x * y
   void mul(const gfp& x,const gfp& y)
-    { Mul(a,x.a,y.a,ZpD); }
+    {
+	  Mul(a,x.a,y.a,ZpD);
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] = x.a_ring[i] * y.a_ring[i];
+#endif
+    }
   void mul(const gfp& x) 
-    { Mul(a,a,x.a,ZpD); }
+    {
+	  Mul(a,a,x.a,ZpD);
+#if defined(EXT_NEC_RING)
+	  for (int i=0; i<sz; i++) a_ring[i] = a_ring[i] * x.a_ring[i];
+#endif
+    }
 
-  gfp operator+(const gfp& x) { gfp res; res.add(*this, x); return res; }
+  gfp operator+(const gfp& x) {
+	  gfp res; res.add(*this, x); return res;
+#if defined(EXT_NEC_RING)
+#endif
+  }
   gfp operator-(const gfp& x) { gfp res; res.sub(*this, x); return res; }
   gfp operator*(const gfp& x) { gfp res; res.mul(*this, x); return res; }
   gfp& operator+=(const gfp& x) { add(x); return *this; }
@@ -158,10 +255,30 @@ class gfp
   void almost_randomize(PRNG& G);
 
   void output(ostream& s,bool human) const
-    { a.output(s,ZpD,human); }
+    {
+#if defined(EXT_NEC_RING)
+	  if (human) {
+		  for (int i=0; i<BATCH_SIZE; i++) {
+			  s << a_ring[i] << " ";
+		  }
+		  s << "\n";
+	  }
+#else
+	  a.output(s,ZpD,human);
+#endif
+    }
   void input(istream& s,bool human)
-    { a.input(s,ZpD,human); }
-
+    {
+#if defined(EXT_NEC_RING)
+	  if (human) {
+		  SPDZEXT_VALTYPE tmp;
+		  s >> tmp;
+		  for (int i=0; i<sz; i++) a_ring[i] = tmp;
+	  }
+#else
+	  a.input(s,ZpD,human);
+#endif
+    }
   friend ostream& operator<<(ostream& s,const gfp& x)
     { x.output(s,true);
       return s;

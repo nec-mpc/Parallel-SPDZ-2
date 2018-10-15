@@ -208,8 +208,10 @@ void mul32(word x,word y,word& ans)
 
 void gf2n_short::mul(const gf2n_short& x,const gf2n_short& y)
 {
+#if defined(EXT_NEC_RING)
+  for (int i=0; i<sz; i++) a_bit[i] = x.a_bit[i] & y.a_bit[i];
+#else
   word hi,lo;
-  
   if (gf2n_short::useC)
     { /* Uses Karatsuba */
       word c,d,e,t;
@@ -235,6 +237,7 @@ void gf2n_short::mul(const gf2n_short& x,const gf2n_short& y)
     }
 
   reduce(hi,lo);
+#endif
 }
 
 
@@ -328,11 +331,23 @@ void gf2n_short::randomize(PRNG& G)
 
 void gf2n_short::output(ostream& s,bool human) const
 {
-  if (human)
-    { s << hex << showbase << a << dec << " "; }
-  else
-    { s.write((char*) &a,sizeof(word)); }
+#if defined(EXT_NEC_RING)
+	  if (human == human) {
+		  int modulus = 8*sizeof(SPDZEXT_VALTYPE);
+		  for (int i=0; i<BATCH_SIZE; i++) {
+			  int bit_i = (a_bit[i/modulus] >> (i%modulus)) & 0x1;
+			  s << bit_i << " ";
+		  }
+		  s << "\n";
+	  }
+#endif
 }
+//{
+//  if (human)
+//    { s << hex << showbase << a << dec << " "; }
+//  else
+//    { s.write((char*) &a,sizeof(word)); }
+//}
 
 void gf2n_short::input(istream& s,bool human)
 {

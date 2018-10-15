@@ -1,0 +1,4 @@
+[parallel_8_0.txt]
+evaluation result = 1 1 1 1 1 1 1 1
+[parallel_8_1.txt]
+evaluation result = 0 0 0 0 0 0 0 0
