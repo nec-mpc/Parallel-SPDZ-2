@@ -108,7 +108,7 @@ print_ln('evaluation result = %s', NodePtr.reveal())
 ```
 
 ### SPDZ-2 extension library
-See url for our implemented extension library.
+See https://github.com/nec-mpc/Parallel-SPDZ-2-Extension-Ring for our implemented extension library.
 
 ## SPDZ-2
 ### Requirements:
