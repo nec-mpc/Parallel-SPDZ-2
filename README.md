@@ -9,7 +9,7 @@ We would like to thank to the team behind the SPDZ-2 framework, which is an exte
 The SPDZ-2 extensions is a mechanism that enables substitution of the original implementation of various operations with an alternate external implementation. This is done by dynamically loading a configured library and prescribed API function pointers. In runtime, the SPDZ-2 processor will call the loaded API functions instead of the original implementation and provide it with the required parameters. In this repository, we set library for parallelized ring based protocol as configured library.
 
 ### MPC programs source code
-The [Programs/Source](https://github.com/cryptobiu/SPDZ-2/tree/master/Programs/Source) folder of this fork contains MPC programs added as part of our work to evaluate different protocols under the framework. For example, the following program evaluates a decision tree.  
+The [Programs/Source](https://github.com/nec-mpc/Parallel-SPDZ-2/tree/master/Programs/Source) folder of this fork contains MPC programs added as part of our work to evaluate different protocols under the framework. For example, the following program evaluates a decision tree.  
 ```
 import util
 #------------------------------------------------------------------------------
