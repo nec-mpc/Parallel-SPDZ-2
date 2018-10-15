@@ -150,12 +150,12 @@ See url for our implemented extension library.
 * [Each MPC server(0/1/2)] 
 	`.Player-Online.x -pn [port number] -lgp 64 [server ID] [PROGRAM NAME]`
 
-- ÅiEx.Åjvariance_modified_10input (This program computes variance from 10 inputs)
+- variance_modified_10input (This program computes variance from 10 inputs)
    * [Proxy]
      `./Server.x 3 60000`
    * [MPC server0]
-     `.Player-Online.x -pn 60000 -lgp 64 0 variance_modified_10input`
+     `./Player-Online.x -pn 60000 -lgp 64 0 variance_modified_10input`
    * [MPC server1]
-      ` .Player-Online.x -pn 60000 -lgp 64 1 variance_modified_10input`
+      `./Player-Online.x -pn 60000 -lgp 64 1 variance_modified_10input`
    * [MPC server2]
-      `.Player-Online.x -pn 60000 -lgp 64 2 variance_modified_10input`
+      `./Player-Online.x -pn 60000 -lgp 64 2 variance_modified_10input`
